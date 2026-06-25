@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kissa — a listening room
 
-## Getting Started
+A personal vinyl collection browsed the way you'd browse a real crate: records
+stand spine-out on a shelf, you pull one toward the light to read its sleeve,
+then **put it on** a virtual turntable that streams through Spotify.
 
-First, run the development server:
+The name comes from _jazz kissa_ (ジャズ喫茶) — Japanese listening cafés known for
+dim lighting, curated vinyl, and treating the music as the main event. The whole
+UI is meant to feel like walking into one of those rooms late at night: warm
+near-black, candlelight amber, film grain, nothing in a hurry.
+
+## Stack
+
+- **Next.js 14** (App Router) + **TypeScript**
+- **Tailwind CSS** with a CSS-custom-property token layer (channel-based so
+  opacity modifiers work)
+- **Framer Motion** for the shelf → cover → turntable transitions
+- **Prisma** + **Supabase** (Postgres) for the collection
+- **Spotify Web Playback SDK** (PKCE OAuth) for playback
+- **MusicBrainz** + **Cover Art Archive** for album metadata and artwork
+
+## Running it
 
 ```bash
+npm install
+cp .env.example .env   # fill in what you have; everything degrades gracefully
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. **With no configuration at all it still runs** — the
+shelf serves a few mock jazz records and the turntable spins in silence.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Database (optional, for a real collection)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Point `DATABASE_URL` at a Supabase/Postgres instance, then:
 
-## Learn More
+```bash
+npx prisma migrate dev --name init   # create the tables
+```
 
-To learn more about Next.js, take a look at the following resources:
+Once a database is connected, records added via **/add** persist, play counts
+are tracked, and the shelf reads from the DB instead of the mock data.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Spotify (optional, for sound)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Create an app at https://developer.spotify.com/dashboard
+2. Add `http://localhost:3000/api/spotify/callback` as a Redirect URI
+3. Set `SPOTIFY_CLIENT_ID` and `SPOTIFY_REDIRECT_URI` in `.env`
+4. In the player view, choose **connect spotify** (PKCE flow; tokens are stored
+   server-side in an httpOnly cookie and, when present, the `SpotifySession`
+   table — never in `localStorage`)
 
-## Deploy on Vercel
+Playback requires Spotify **Premium**. Each album stores a `spotify:album:…` URI
+(pasted on the add form for now) which is what gets put on.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## How it's organized
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/
+  page.tsx                  the room (shelf)
+  add/page.tsx              add a record
+  api/albums/…              collection CRUD (+ mark-played)
+  api/search/…              MusicBrainz proxy
+  api/spotify/…             PKCE OAuth, callback, token endpoint
+components/
+  ui/        RoomLayout, GrainOverlay          — the room's chrome
+  shelf/     ShelfView, VinylSpine, SpineLabel — the crate + interaction
+  album/     AlbumCover, AlbumDetails          — the pulled-out state
+  player/    RecordPlayer, NowPlaying, SpotifyPlayerContext
+  add/       AddRecord                         — search + form
+lib/
+  types, mock, color, dominantColor, prisma, albums, spotify
+```
+
+## Design tokens
+
+Defined once in `app/globals.css` and consumed through Tailwind:
+
+| token       | hex       | role                         |
+| ----------- | --------- | ---------------------------- |
+| `room`      | `#0f0d0b` | the room (near-black, warm)  |
+| `shelf`     | `#1c1712` | shelf / surface              |
+| `wood`      | `#2e2218` | card / panel backgrounds     |
+| `amber`     | `#c8832a` | primary accent (candlelight) |
+| `amber-dim` | `#8a5a1e` | secondary accent             |
+| `cream`     | `#e8d9b8` | primary text                 |
+| `muted`     | `#8a7a62` | secondary text               |
+| `groove`    | `#3d3020` | borders / dividers           |
+
+Display serif is Cormorant Garamond; body is Inter; metadata is JetBrains Mono.
+No white backgrounds, no pure black — everything has warmth. All motion respects
+`prefers-reduced-motion`.

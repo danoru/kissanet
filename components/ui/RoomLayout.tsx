@@ -1,0 +1,67 @@
+import Link from "next/link";
+import GrainOverlay from "./GrainOverlay";
+
+/**
+ * The shared chrome for every screen: a dim room with a deep vignette,
+ * a quiet masthead, and the ever-present film grain. Everything that
+ * happens in Kissa happens inside this room.
+ */
+export default function RoomLayout({
+  children,
+  active,
+}: {
+  children: React.ReactNode;
+  active?: "room" | "add";
+}) {
+  return (
+    <div className="relative min-h-screen overflow-x-hidden bg-room text-cream">
+      {/* edge vignette — the dark falls off toward the corners of the room */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-40"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 70% at 50% 35%, transparent 40%, rgba(0,0,0,0.55) 100%)",
+        }}
+      />
+
+      <GrainOverlay />
+
+      <header className="relative z-30 flex items-baseline justify-between px-8 py-6 md:px-14">
+        <Link href="/" className="group flex items-baseline gap-3">
+          <span className="font-display text-3xl font-medium tracking-wide text-cream md:text-4xl">
+            喫茶
+          </span>
+          <span className="font-display text-2xl italic text-amber transition-colors group-hover:text-cream md:text-3xl">
+            kissa
+          </span>
+        </Link>
+
+        <nav className="flex items-center gap-7 font-mono text-[11px] uppercase tracking-[0.2em] text-muted">
+          <Link
+            href="/"
+            className={
+              active === "room"
+                ? "text-amber"
+                : "transition-colors hover:text-cream"
+            }
+          >
+            the room
+          </Link>
+          <Link
+            href="/add"
+            className={
+              active === "add"
+                ? "text-amber"
+                : "transition-colors hover:text-cream"
+            }
+          >
+            add a record
+          </Link>
+        </nav>
+      </header>
+
+      <main className="relative z-20">{children}</main>
+    </div>
+  );
+}
