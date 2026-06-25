@@ -3,21 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SearchResult } from "@/app/api/search/route";
-import { GENRE_TAGS, MOOD_TAGS } from "@/lib/types";
 import { extractDominantColor } from "@/lib/dominantColor";
+import AlbumMetaFields, { type AlbumMeta } from "@/components/album/AlbumMetaFields";
 
-type Form = {
-  title: string;
-  artist: string;
-  year: string;
-  genres: string[];
-  subgenres: string[];
-  spotifyId: string;
-  coverUrl: string;
-  rating: number;
-  notes: string;
-  mood: string[];
-};
+type Form = AlbumMeta & { coverUrl: string };
 
 const EMPTY: Form = {
   title: "",
@@ -40,10 +29,11 @@ export default function AddRecord() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [form, setForm] = useState<Form>(EMPTY);
   const [picked, setPicked] = useState(false);
-  const [subInput, setSubInput] = useState("");
   const [spineColor, setSpineColor] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  const patch = (p: Partial<Form>) => setForm((f) => ({ ...f, ...p }));
 
   async function runSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -67,53 +57,16 @@ export default function AddRecord() {
 
   async function pick(r: SearchResult) {
     setPicked(true);
-    setForm((f) => ({
-      ...f,
+    patch({
       title: r.title,
       artist: r.artist,
       year: r.year ? String(r.year) : "",
       coverUrl: r.coverUrl,
       spotifyId: r.spotifyId,
-    }));
+    });
     // pull the dominant color from the cover for the spine
     const color = await extractDominantColor(r.coverUrl);
     setSpineColor(color);
-  }
-
-  function toggleMood(m: string) {
-    setForm((f) => ({
-      ...f,
-      mood: f.mood.includes(m)
-        ? f.mood.filter((x) => x !== m)
-        : [...f.mood, m],
-    }));
-  }
-
-  function toggleGenre(g: string) {
-    setForm((f) => ({
-      ...f,
-      genres: f.genres.includes(g)
-        ? f.genres.filter((x) => x !== g)
-        : [...f.genres, g],
-    }));
-  }
-
-  function addSubgenre(raw: string) {
-    const tag = raw.trim().toLowerCase();
-    if (!tag) return;
-    setForm((f) =>
-      f.subgenres.includes(tag)
-        ? f
-        : { ...f, subgenres: [...f.subgenres, tag] },
-    );
-    setSubInput("");
-  }
-
-  function removeSubgenre(tag: string) {
-    setForm((f) => ({
-      ...f,
-      subgenres: f.subgenres.filter((x) => x !== tag),
-    }));
   }
 
   async function save(e: React.FormEvent) {
@@ -221,178 +174,19 @@ export default function AddRecord() {
       {/* details form */}
       {picked && (
         <form onSubmit={save} className="mt-8 flex flex-col gap-6">
-          <div className="flex items-start gap-5">
-            {form.coverUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={form.coverUrl}
-                alt=""
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).style.display = "none";
-                }}
-                className="h-24 w-24 shrink-0 rounded-sm object-cover ring-1 ring-black/40"
-              />
-            )}
-            <div className="flex flex-1 flex-col gap-3">
-              <Field label="Title">
-                <input
-                  value={form.title}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, title: e.target.value }))
-                  }
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Artist">
-                <input
-                  value={form.artist}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, artist: e.target.value }))
-                  }
-                  className={inputCls}
-                />
-              </Field>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Year">
-              <input
-                value={form.year}
-                inputMode="numeric"
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, year: e.target.value }))
-                }
-                className={inputCls}
-              />
-            </Field>
-          </div>
-
-          <Field label="Genres">
-            <div className="flex flex-wrap gap-2">
-              {GENRE_TAGS.map((g) => {
-                const on = form.genres.includes(g);
-                return (
-                  <button
-                    key={g}
-                    type="button"
-                    onClick={() => toggleGenre(g)}
-                    className={`rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors ${
-                      on
-                        ? "border-amber bg-amber/10 text-amber"
-                        : "border-groove text-muted hover:border-amber-dim hover:text-cream"
-                    }`}
-                  >
-                    {g}
-                  </button>
-                );
-              })}
-            </div>
-          </Field>
-
-          <Field label="Subgenres">
-            <div className="flex flex-wrap items-center gap-2">
-              {form.subgenres.map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => removeSubgenre(tag)}
-                  className="group flex items-center gap-1 rounded-full border border-amber/50 bg-amber/10 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-amber"
-                  aria-label={`Remove ${tag}`}
-                >
-                  {tag}
-                  <span className="text-amber/60 group-hover:text-cream">×</span>
-                </button>
-              ))}
-              <input
-                value={subInput}
-                onChange={(e) => setSubInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === ",") {
-                    e.preventDefault();
-                    addSubgenre(subInput);
-                  } else if (
-                    e.key === "Backspace" &&
-                    !subInput &&
-                    form.subgenres.length
-                  ) {
-                    removeSubgenre(form.subgenres[form.subgenres.length - 1]);
-                  }
-                }}
-                onBlur={() => addSubgenre(subInput)}
-                placeholder="triphop, speed metal…  (enter to add)"
-                className="min-w-[12rem] flex-1 rounded-sm border border-groove bg-shelf/60 px-3 py-2 font-body text-cream placeholder:text-muted/60 focus:border-amber focus:outline-none"
-              />
-            </div>
-          </Field>
-
-          <Field label="Spotify album URI">
-            <input
-              value={form.spotifyId}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, spotifyId: e.target.value }))
-              }
-              placeholder="spotify:album:…"
-              className={`${inputCls} font-mono text-sm`}
+          {form.coverUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={form.coverUrl}
+              alt=""
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
+              className="h-24 w-24 shrink-0 rounded-sm object-cover ring-1 ring-black/40"
             />
-          </Field>
+          )}
 
-          <Field label="Rating">
-            <div className="flex gap-1 text-2xl">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() =>
-                    setForm((f) => ({
-                      ...f,
-                      rating: f.rating === n ? 0 : n,
-                    }))
-                  }
-                  className={
-                    n <= form.rating ? "text-amber" : "text-groove hover:text-amber-dim"
-                  }
-                  aria-label={`${n} star${n > 1 ? "s" : ""}`}
-                >
-                  ★
-                </button>
-              ))}
-            </div>
-          </Field>
-
-          <Field label="Mood">
-            <div className="flex flex-wrap gap-2">
-              {MOOD_TAGS.map((m) => {
-                const on = form.mood.includes(m);
-                return (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => toggleMood(m)}
-                    className={`rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors ${
-                      on
-                        ? "border-amber bg-amber/10 text-amber"
-                        : "border-groove text-muted hover:border-amber-dim hover:text-cream"
-                    }`}
-                  >
-                    {m}
-                  </button>
-                );
-              })}
-            </div>
-          </Field>
-
-          <Field label="Liner notes">
-            <textarea
-              value={form.notes}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, notes: e.target.value }))
-              }
-              rows={3}
-              placeholder="What this record is for…"
-              className={`${inputCls} resize-none`}
-            />
-          </Field>
+          <AlbumMetaFields meta={form} onChange={patch} />
 
           {spineColor && (
             <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
@@ -435,25 +229,5 @@ export default function AddRecord() {
         </form>
       )}
     </div>
-  );
-}
-
-const inputCls =
-  "w-full rounded-sm border border-groove bg-shelf/60 px-3 py-2 font-body text-cream placeholder:text-muted/60 focus:border-amber focus:outline-none";
-
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="flex flex-col gap-1.5">
-      <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted">
-        {label}
-      </span>
-      {children}
-    </label>
   );
 }
