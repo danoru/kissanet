@@ -18,10 +18,11 @@ model Album {
   title        String
   artist       String
   year         Int?
-  genre        String?
-  subgenre     String?
+  genres       String[] // broad genres from the fixed taxonomy
+  subgenres    String[] // free-form, more specific styles
   coverUrl     String?
   spineColor   String? // hex — dominant color extracted from cover, used for spine display
+  featured     Boolean   @default(false) // stood face-out on the shelf
   spotifyId    String? // Spotify album URI (e.g. "spotify:album:xxx")
   mbid         String? // MusicBrainz ID
   rating       Int? // 1–5

@@ -19,8 +19,8 @@ export type NewAlbum = {
   title: string;
   artist: string;
   year?: number | null;
-  genre?: string | null;
-  subgenre?: string | null;
+  genres?: string[];
+  subgenres?: string[];
   coverUrl?: string | null;
   spineColor?: string | null;
   spotifyId?: string | null;
@@ -51,7 +51,12 @@ export async function createAlbum(data: NewAlbum): Promise<Album> {
     );
   }
   const row = await prisma.album.create({
-    data: { ...data, mood: data.mood ?? [] },
+    data: {
+      ...data,
+      genres: data.genres ?? [],
+      subgenres: data.subgenres ?? [],
+      mood: data.mood ?? [],
+    },
   });
   return serialize(row);
 }
@@ -69,6 +74,19 @@ export async function markPlayed(id: string): Promise<Album | null> {
   const row = await prisma.album.update({
     where: { id },
     data: { playCount: { increment: 1 }, lastPlayedAt: new Date() },
+  });
+  return serialize(row);
+}
+
+/** Turn a record face-out on the shelf (or back spine-on). */
+export async function setFeatured(
+  id: string,
+  featured: boolean,
+): Promise<Album | null> {
+  if (!hasDatabase()) return null;
+  const row = await prisma.album.update({
+    where: { id },
+    data: { featured },
   });
   return serialize(row);
 }

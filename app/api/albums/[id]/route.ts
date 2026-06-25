@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAlbum, deleteAlbum, markPlayed } from "@/lib/albums";
+import { getAlbum, deleteAlbum, markPlayed, setFeatured } from "@/lib/albums";
 
 export async function GET(
   _req: Request,
@@ -12,12 +12,12 @@ export async function GET(
   return NextResponse.json({ album });
 }
 
-// PATCH is used to record that an album was put on the turntable.
+// PATCH records small state changes: putting a record on, or featuring it.
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } },
 ) {
-  let body: { action?: string } = {};
+  let body: { action?: string; featured?: boolean } = {};
   try {
     body = await req.json();
   } catch {
@@ -26,6 +26,10 @@ export async function PATCH(
 
   if (body.action === "played") {
     const album = await markPlayed(params.id);
+    return NextResponse.json({ album });
+  }
+  if (body.action === "featured") {
+    const album = await setFeatured(params.id, Boolean(body.featured));
     return NextResponse.json({ album });
   }
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });

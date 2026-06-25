@@ -3,27 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SearchResult } from "@/app/api/search/route";
-import { MOOD_TAGS } from "@/lib/types";
+import { GENRE_TAGS, MOOD_TAGS } from "@/lib/types";
 import { extractDominantColor } from "@/lib/dominantColor";
-
-const GENRES = [
-  "Jazz",
-  "Soul",
-  "Funk",
-  "Ambient",
-  "Folk",
-  "Classical",
-  "Hip-Hop",
-  "Electronic",
-  "Rock",
-  "Other",
-];
 
 type Form = {
   title: string;
   artist: string;
   year: string;
-  genre: string;
+  genres: string[];
+  subgenres: string[];
   spotifyId: string;
   coverUrl: string;
   rating: number;
@@ -35,7 +23,8 @@ const EMPTY: Form = {
   title: "",
   artist: "",
   year: "",
-  genre: "",
+  genres: [],
+  subgenres: [],
   spotifyId: "",
   coverUrl: "",
   rating: 0,
@@ -51,6 +40,7 @@ export default function AddRecord() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [form, setForm] = useState<Form>(EMPTY);
   const [picked, setPicked] = useState(false);
+  const [subInput, setSubInput] = useState("");
   const [spineColor, setSpineColor] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -99,6 +89,33 @@ export default function AddRecord() {
     }));
   }
 
+  function toggleGenre(g: string) {
+    setForm((f) => ({
+      ...f,
+      genres: f.genres.includes(g)
+        ? f.genres.filter((x) => x !== g)
+        : [...f.genres, g],
+    }));
+  }
+
+  function addSubgenre(raw: string) {
+    const tag = raw.trim().toLowerCase();
+    if (!tag) return;
+    setForm((f) =>
+      f.subgenres.includes(tag)
+        ? f
+        : { ...f, subgenres: [...f.subgenres, tag] },
+    );
+    setSubInput("");
+  }
+
+  function removeSubgenre(tag: string) {
+    setForm((f) => ({
+      ...f,
+      subgenres: f.subgenres.filter((x) => x !== tag),
+    }));
+  }
+
   async function save(e: React.FormEvent) {
     e.preventDefault();
     if (!form.title || !form.artist) return;
@@ -112,7 +129,8 @@ export default function AddRecord() {
           title: form.title,
           artist: form.artist,
           year: form.year ? Number(form.year) : null,
-          genre: form.genre || null,
+          genres: form.genres,
+          subgenres: form.subgenres,
           spotifyId: form.spotifyId || null,
           coverUrl: form.coverUrl || null,
           spineColor,
@@ -248,23 +266,65 @@ export default function AddRecord() {
                 className={inputCls}
               />
             </Field>
-            <Field label="Genre">
-              <select
-                value={form.genre}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, genre: e.target.value }))
-                }
-                className={inputCls}
-              >
-                <option value="">—</option>
-                {GENRES.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
-              </select>
-            </Field>
           </div>
+
+          <Field label="Genres">
+            <div className="flex flex-wrap gap-2">
+              {GENRE_TAGS.map((g) => {
+                const on = form.genres.includes(g);
+                return (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => toggleGenre(g)}
+                    className={`rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors ${
+                      on
+                        ? "border-amber bg-amber/10 text-amber"
+                        : "border-groove text-muted hover:border-amber-dim hover:text-cream"
+                    }`}
+                  >
+                    {g}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+
+          <Field label="Subgenres">
+            <div className="flex flex-wrap items-center gap-2">
+              {form.subgenres.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => removeSubgenre(tag)}
+                  className="group flex items-center gap-1 rounded-full border border-amber/50 bg-amber/10 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-amber"
+                  aria-label={`Remove ${tag}`}
+                >
+                  {tag}
+                  <span className="text-amber/60 group-hover:text-cream">×</span>
+                </button>
+              ))}
+              <input
+                value={subInput}
+                onChange={(e) => setSubInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === ",") {
+                    e.preventDefault();
+                    addSubgenre(subInput);
+                  } else if (
+                    e.key === "Backspace" &&
+                    !subInput &&
+                    form.subgenres.length
+                  ) {
+                    removeSubgenre(form.subgenres[form.subgenres.length - 1]);
+                  }
+                }}
+                onBlur={() => addSubgenre(subInput)}
+                placeholder="triphop, speed metal…  (enter to add)"
+                className="min-w-[12rem] flex-1 rounded-sm border border-groove bg-shelf/60 px-3 py-2 font-body text-cream placeholder:text-muted/60 focus:border-amber focus:outline-none"
+              />
+            </div>
+          </Field>
 
           <Field label="Spotify album URI">
             <input

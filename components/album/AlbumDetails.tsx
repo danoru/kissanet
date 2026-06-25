@@ -15,7 +15,10 @@ function Stars({ rating }: { rating: number | null }) {
  * title, the catalogue line, personal liner notes, and mood tags.
  */
 export default function AlbumDetails({ album }: { album: Album }) {
-  const catalogue = [album.year, album.genre, album.subgenre]
+  const catalogue = [
+    album.year ? String(album.year) : null,
+    album.genres.length ? album.genres.join(", ") : null,
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -34,6 +37,12 @@ export default function AlbumDetails({ album }: { album: Album }) {
         {catalogue && <span>{catalogue}</span>}
         <Stars rating={album.rating} />
       </div>
+
+      {album.subgenres.length > 0 && (
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted/70">
+          {album.subgenres.join(" · ")}
+        </p>
+      )}
 
       {album.notes && (
         <p className="max-w-md font-display text-xl italic leading-relaxed text-cream/85">
