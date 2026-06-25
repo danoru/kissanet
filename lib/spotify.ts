@@ -25,6 +25,47 @@ export function spotifyConfigured(): boolean {
   return !!process.env.SPOTIFY_CLIENT_ID && !!process.env.SPOTIFY_REDIRECT_URI;
 }
 
+/* ---------------- app token (client credentials, for search) ---------------- */
+// Catalog search on the "add a record" page doesn't need a logged-in user, so
+// it uses an app-level token from the client-credentials flow. This DOES need
+// SPOTIFY_CLIENT_SECRET (unlike the PKCE playback flow, which doesn't).
+
+export function spotifySearchConfigured(): boolean {
+  return !!process.env.SPOTIFY_CLIENT_ID && !!process.env.SPOTIFY_CLIENT_SECRET;
+}
+
+// cached in module memory for the life of the server process
+let appToken: { token: string; expiresAt: number } | null = null;
+
+export async function getAppAccessToken(): Promise<string> {
+  if (appToken && appToken.expiresAt - 60_000 > Date.now()) {
+    return appToken.token;
+  }
+  const id = process.env.SPOTIFY_CLIENT_ID;
+  const secret = process.env.SPOTIFY_CLIENT_SECRET;
+  if (!id || !secret) {
+    throw new Error("Spotify client credentials are not configured");
+  }
+  const res = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Basic ${Buffer.from(`${id}:${secret}`).toString("base64")}`,
+    },
+    body: new URLSearchParams({ grant_type: "client_credentials" }),
+  });
+  if (!res.ok) throw new Error(`Client-credentials token failed: ${res.status}`);
+  const data = (await res.json()) as {
+    access_token: string;
+    expires_in: number;
+  };
+  appToken = {
+    token: data.access_token,
+    expiresAt: Date.now() + data.expires_in * 1000,
+  };
+  return appToken.token;
+}
+
 /* ----------------------------- PKCE ----------------------------- */
 
 function base64url(bytes: Uint8Array): string {

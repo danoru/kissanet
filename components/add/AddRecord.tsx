@@ -26,7 +26,6 @@ type Form = {
   genre: string;
   spotifyId: string;
   coverUrl: string;
-  mbid: string;
   rating: number;
   notes: string;
   mood: string[];
@@ -39,7 +38,6 @@ const EMPTY: Form = {
   genre: "",
   spotifyId: "",
   coverUrl: "",
-  mbid: "",
   rating: 0,
   notes: "",
   mood: [],
@@ -85,7 +83,7 @@ export default function AddRecord() {
       artist: r.artist,
       year: r.year ? String(r.year) : "",
       coverUrl: r.coverUrl,
-      mbid: r.mbid,
+      spotifyId: r.spotifyId,
     }));
     // pull the dominant color from the cover for the spine
     const color = await extractDominantColor(r.coverUrl);
@@ -117,7 +115,6 @@ export default function AddRecord() {
           genre: form.genre || null,
           spotifyId: form.spotifyId || null,
           coverUrl: form.coverUrl || null,
-          mbid: form.mbid || null,
           spineColor,
           rating: form.rating || null,
           notes: form.notes || null,
@@ -169,7 +166,7 @@ export default function AddRecord() {
       {results.length > 0 && !picked && (
         <ul className="mt-6 flex flex-col divide-y divide-groove border-y border-groove">
           {results.map((r) => (
-            <li key={r.mbid}>
+            <li key={r.spotifyId}>
               <button
                 type="button"
                 onClick={() => pick(r)}
