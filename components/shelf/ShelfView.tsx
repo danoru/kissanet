@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { Album } from "@/lib/types";
 import VinylSpine from "./VinylSpine";
@@ -260,6 +261,12 @@ export default function ShelfView({ albums }: { albums: Album[] }) {
                             ? "★ featured — turn spine-on"
                             : "☆ stand this one face-out"}
                         </button>
+                        <Link
+                          href={`/album/${selected.id}/edit`}
+                          className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted/70 transition-colors hover:text-cream"
+                        >
+                          ✎ edit details
+                        </Link>
                       </div>
                     </motion.div>
                   ) : (
