@@ -7,7 +7,7 @@ export default function RoomLamp() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed left-0 top-[14%] z-0 hidden select-none md:block"
+      className="pointer-events-none fixed left-0 top-[120px] z-20 hidden select-none lg:block"
       style={{ width: 360, height: 520 }}
     >
       {/* the broad pool of light the lamp throws across the room */}

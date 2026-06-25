@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { Album } from "@/lib/types";
 import VinylSpine from "./VinylSpine";
-import FeaturedShelf from "./FeaturedShelf";
+import FaceOutRecord from "./FaceOutRecord";
 import AlbumCover from "@/components/album/AlbumCover";
 import AlbumDetails from "@/components/album/AlbumDetails";
 import RecordPlayer from "@/components/player/RecordPlayer";
@@ -23,19 +23,27 @@ export default function ShelfView({ albums }: { albums: Album[] }) {
 
   const [view, setView] = useState<View>("shelf");
   const [selected, setSelected] = useState<Album | null>(null);
-
-  // The top shelf shows a few records face-out — favour the most-played ones
-  // that actually have cover art, so the row reads as a wall of sleeves.
-  const featured = [...albums]
-    .sort((a, b) => {
-      const art = Number(Boolean(b.coverUrl)) - Number(Boolean(a.coverUrl));
-      if (art) return art;
-      return b.playCount - a.playCount;
-    })
-    .slice(0, 5);
   // local "spinning in silence" flag for when Spotify isn't connected
   const [localPlaying, setLocalPlaying] = useState(false);
   const playing = spotifyReady ? spotify.isPlaying : localPlaying;
+
+  // Work off a local copy so featuring a record updates the shelf instantly;
+  // re-sync if the server data changes underneath us (e.g. after a refresh).
+  const [items, setItems] = useState<Album[]>(albums);
+  useEffect(() => setItems(albums), [albums]);
+
+  const toggleFeatured = useCallback((album: Album) => {
+    const next = !album.featured;
+    setItems((list) =>
+      list.map((a) => (a.id === album.id ? { ...a, featured: next } : a)),
+    );
+    setSelected((s) => (s && s.id === album.id ? { ...s, featured: next } : s));
+    fetch(`/api/albums/${album.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "featured", featured: next }),
+    }).catch(() => {});
+  }, []);
 
   const open = useCallback((album: Album) => {
     setSelected(album);
@@ -125,15 +133,17 @@ export default function ShelfView({ albums }: { albums: Album[] }) {
             }}
           />
 
-          {/* TOP SHELF — featured records, face-out */}
-          <FeaturedShelf albums={featured} onSelect={open} />
-
-          {/* BOTTOM SHELF — the full crate of spines */}
-          <div className="relative mt-6">
-            <div className="relative flex items-end gap-[3px] overflow-x-auto pb-5 pt-3">
-              {albums.map((album) => (
-                <VinylSpine key={album.id} album={album} onSelect={open} />
-              ))}
+          {/* the records — spine-on, with featured ones turned face-out in
+              place. They stand directly on the ledge below, no scroll. */}
+          <div className="relative">
+            <div className="relative flex items-end gap-[3px]">
+              {items.map((album) =>
+                album.featured ? (
+                  <FaceOutRecord key={album.id} album={album} onSelect={open} />
+                ) : (
+                  <VinylSpine key={album.id} album={album} onSelect={open} />
+                ),
+              )}
 
               {/* a leaning wooden bookend — the crate has room for more */}
               <div
@@ -233,13 +243,24 @@ export default function ShelfView({ albums }: { albums: Album[] }) {
                       className="flex flex-col items-center gap-7"
                     >
                       <AlbumDetails album={selected} />
-                      <button
-                        type="button"
-                        onClick={putItOn}
-                        className="group relative rounded-full border border-amber/60 px-8 py-3 font-mono text-[11px] uppercase tracking-[0.28em] text-amber transition-all hover:border-amber hover:text-cream hover:shadow-candle-soft"
-                      >
-                        ▸ put it on
-                      </button>
+                      <div className="flex flex-col items-center gap-4">
+                        <button
+                          type="button"
+                          onClick={putItOn}
+                          className="group relative rounded-full border border-amber/60 px-8 py-3 font-mono text-[11px] uppercase tracking-[0.28em] text-amber transition-all hover:border-amber hover:text-cream hover:shadow-candle-soft"
+                        >
+                          ▸ put it on
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleFeatured(selected)}
+                          className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted transition-colors hover:text-cream"
+                        >
+                          {selected.featured
+                            ? "★ featured — turn spine-on"
+                            : "☆ stand this one face-out"}
+                        </button>
+                      </div>
                     </motion.div>
                   ) : (
                     <motion.div
