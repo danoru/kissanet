@@ -18,6 +18,7 @@ export default function ShelfView({ albums }: { albums: Album[] }) {
   const reduce = useReducedMotion();
   const spotify = useSpotify();
   const spotifyReady = spotify.status === "ready";
+  const spotifyPause = spotify.pause;
 
   const [view, setView] = useState<View>("shelf");
   const [selected, setSelected] = useState<Album | null>(null);
@@ -59,6 +60,14 @@ export default function ShelfView({ albums }: { albums: Album[] }) {
     if (spotifyReady) spotify.toggle();
     else setLocalPlaying((p) => !p);
   }, [spotifyReady, spotify]);
+
+  // The record should only play while we're actually on the turntable.
+  // Stop playback when the player closes (back to the shelf, Esc, click-away)
+  // and when the room unmounts (navigating to another page).
+  useEffect(() => {
+    if (view !== "playing") spotifyPause();
+  }, [view, spotifyPause]);
+  useEffect(() => () => spotifyPause(), [spotifyPause]);
 
   // Esc closes the open record
   useEffect(() => {

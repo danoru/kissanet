@@ -21,6 +21,7 @@ type SpotifyPlayer = {
   connect: () => Promise<boolean>;
   disconnect: () => void;
   togglePlay: () => Promise<void>;
+  pause: () => Promise<void>;
   getCurrentState: () => Promise<SpotifyState | null>;
   addListener: (event: string, cb: (arg: unknown) => void) => void;
 };
@@ -49,6 +50,7 @@ type Ctx = {
   connect: () => void;
   playAlbum: (uri: string) => Promise<void>;
   toggle: () => void;
+  pause: () => void;
 };
 
 const PlayerContext = createContext<Ctx | null>(null);
@@ -191,6 +193,11 @@ export function SpotifyPlayerProvider({
     playerRef.current?.togglePlay();
   }, []);
 
+  // a no-op when nothing is connected/playing, so it's always safe to call
+  const pause = useCallback(() => {
+    playerRef.current?.pause();
+  }, []);
+
   return (
     <PlayerContext.Provider
       value={{
@@ -203,6 +210,7 @@ export function SpotifyPlayerProvider({
         connect,
         playAlbum,
         toggle,
+        pause,
       }}
     >
       {children}
