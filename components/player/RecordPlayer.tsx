@@ -42,12 +42,11 @@ export default function RecordPlayer({
     <div className="relative mx-auto aspect-square w-full max-w-[420px]">
       {/* plinth */}
       <div
-        className="absolute inset-0 rounded-2xl"
+        className="wood-grain absolute inset-0 rounded-2xl"
         style={{
-          background:
-            "linear-gradient(145deg, #241a12, #160f0a 70%)",
+          backgroundColor: "rgb(var(--color-wood))",
           boxShadow:
-            "inset 0 1px 0 rgba(255,255,255,0.06), 0 30px 60px -25px rgba(0,0,0,0.9)",
+            "inset 0 1px 0 rgb(var(--color-wood-hi) / 0.4), 0 30px 60px -25px rgba(0,0,0,0.9)",
           border: "1px solid rgb(var(--color-groove))",
         }}
       />

@@ -13,6 +13,7 @@ const config: Config = {
         room: "rgb(var(--color-room) / <alpha-value>)",
         shelf: "rgb(var(--color-shelf) / <alpha-value>)",
         wood: "rgb(var(--color-wood) / <alpha-value>)",
+        "wood-hi": "rgb(var(--color-wood-hi) / <alpha-value>)",
         amber: "rgb(var(--color-amber) / <alpha-value>)",
         "amber-dim": "rgb(var(--color-amber-dim) / <alpha-value>)",
         cream: "rgb(var(--color-cream) / <alpha-value>)",
@@ -38,10 +39,26 @@ const config: Config = {
           from: { transform: "rotate(0deg)" },
           to: { transform: "rotate(360deg)" },
         },
+        // VU-meter bounce — the bar jitters around a high reading while audio plays
+        vu: {
+          "0%": { transform: "scaleY(0.35)" },
+          "20%": { transform: "scaleY(0.8)" },
+          "40%": { transform: "scaleY(0.5)" },
+          "60%": { transform: "scaleY(0.95)" },
+          "80%": { transform: "scaleY(0.6)" },
+          "100%": { transform: "scaleY(0.75)" },
+        },
+        // the warm filament breathing inside the lamp
+        glow: {
+          "0%, 100%": { opacity: "0.85" },
+          "50%": { opacity: "1" },
+        },
       },
       animation: {
         shimmer: "shimmer 2.2s ease-in-out infinite",
         "spin-slow": "spin-slow 4s linear infinite",
+        vu: "vu 0.9s ease-in-out infinite",
+        glow: "glow 6s ease-in-out infinite",
       },
     },
   },

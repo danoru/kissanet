@@ -1,5 +1,6 @@
 import Link from "next/link";
 import GrainOverlay from "./GrainOverlay";
+import RoomLamp from "./RoomLamp";
 
 /**
  * The shared chrome for every screen: a dim room with a deep vignette,
@@ -15,6 +16,9 @@ export default function RoomLayout({
 }) {
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-room text-cream">
+      {/* the wall sconce that lights the room */}
+      <RoomLamp />
+
       {/* edge vignette — the dark falls off toward the corners of the room */}
       <div
         aria-hidden
