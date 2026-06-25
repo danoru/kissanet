@@ -1,0 +1,41 @@
+// Kissa — a personal vinyl collection.
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Album {
+  id           String    @id @default(cuid())
+  title        String
+  artist       String
+  year         Int?
+  genre        String?
+  subgenre     String?
+  coverUrl     String?
+  spineColor   String? // hex — dominant color extracted from cover, used for spine display
+  spotifyId    String? // Spotify album URI (e.g. "spotify:album:xxx")
+  mbid         String? // MusicBrainz ID
+  rating       Int? // 1–5
+  notes        String? // personal liner notes / thoughts
+  mood         String[] // tags: ["late night", "rainy", "focus", etc.]
+  playCount    Int       @default(0)
+  lastPlayedAt DateTime?
+  addedAt      DateTime  @default(now())
+}
+
+// A single-user store for the Spotify access/refresh tokens, so playback
+// state survives reloads without putting tokens in localStorage.
+model SpotifySession {
+  id           String   @id @default(cuid())
+  accessToken  String
+  refreshToken String?
+  scope        String?
+  expiresAt    DateTime
+  updatedAt    DateTime @updatedAt
+}
