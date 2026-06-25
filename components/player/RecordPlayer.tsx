@@ -1,13 +1,14 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import type { Album } from "@/lib/types";
 import { DEFAULT_SPINE, readableText } from "@/lib/color";
 
 /**
  * The turntable. A dark vinyl disc with groove rings spins (when playing),
  * carrying the album cover as its centre label. A tonearm drops onto the
- * record once when playback begins.
+ * record once playback begins — and the disc spins up only after it lands.
  */
 export default function RecordPlayer({
   album,
@@ -17,6 +18,25 @@ export default function RecordPlayer({
   playing: boolean;
 }) {
   const base = album.spineColor ?? DEFAULT_SPINE;
+  const reduce = useReducedMotion();
+
+  // The needle drops a beat after playback starts, so the turntable has time
+  // to settle into view first. The disc spins up only once the needle lands.
+  // Tracking this as its own state (rather than reading `playing` directly)
+  // means the drop animates even when the player mounts already playing.
+  const [landed, setLanded] = useState(false);
+  useEffect(() => {
+    if (!playing) {
+      setLanded(false);
+      return;
+    }
+    if (reduce) {
+      setLanded(true);
+      return;
+    }
+    const t = setTimeout(() => setLanded(true), 550);
+    return () => clearTimeout(t);
+  }, [playing, reduce]);
 
   return (
     <div className="relative mx-auto aspect-square w-full max-w-[420px]">
@@ -38,7 +58,7 @@ export default function RecordPlayer({
           className="h-full w-full rounded-full"
           style={{
             animation: "spin-slow 4s linear infinite",
-            animationPlayState: playing ? "running" : "paused",
+            animationPlayState: landed ? "running" : "paused",
             background:
               "repeating-radial-gradient(circle at center, #0c0a08 0px, #0c0a08 2px, #14110d 3px, #0c0a08 4px), radial-gradient(circle at 38% 32%, rgba(255,255,255,0.05), transparent 45%)",
             boxShadow: "0 12px 30px -12px rgba(0,0,0,0.9)",
@@ -73,8 +93,8 @@ export default function RecordPlayer({
       {/* tonearm — pivots in from the top-right, drops onto the record when playing */}
       <motion.div
         className="absolute right-[10%] top-[10%] origin-top-right"
-        initial={false}
-        animate={{ rotate: playing ? -32 : -64 }}
+        initial={{ rotate: -64 }}
+        animate={{ rotate: landed ? -32 : -64 }}
         transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         aria-hidden
       >
