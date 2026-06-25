@@ -93,8 +93,8 @@ export default function RecordPlayer({
       {/* tonearm — pivots in from the top-right, drops onto the record when playing */}
       <motion.div
         className="absolute right-[10%] top-[10%] origin-top-right"
-        initial={{ rotate: -64 }}
-        animate={{ rotate: landed ? -32 : -64 }}
+        initial={{ rotate: -46 }}
+        animate={{ rotate: landed ? 8 : -46 }}
         transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         aria-hidden
       >
