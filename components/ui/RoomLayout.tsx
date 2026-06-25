@@ -61,7 +61,7 @@ export default function RoomLayout({
         </nav>
       </header>
 
-      <main className="relative z-20">{children}</main>
+      <main className="relative">{children}</main>
     </div>
   );
 }

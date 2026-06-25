@@ -141,7 +141,7 @@ export default function ShelfView({ albums }: { albums: Album[] }) {
       <AnimatePresence>
         {overlayOpen && selected && (
           <motion.div
-            className="fixed inset-0 z-30 flex items-center justify-center px-6 py-20"
+            className="fixed inset-0 z-[35] flex items-center justify-center px-6 py-20"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
