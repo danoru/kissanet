@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { Album } from "@/lib/types";
 import VinylSpine from "./VinylSpine";
+import FeaturedShelf from "./FeaturedShelf";
 import AlbumCover from "@/components/album/AlbumCover";
 import AlbumDetails from "@/components/album/AlbumDetails";
 import RecordPlayer from "@/components/player/RecordPlayer";
@@ -22,6 +23,16 @@ export default function ShelfView({ albums }: { albums: Album[] }) {
 
   const [view, setView] = useState<View>("shelf");
   const [selected, setSelected] = useState<Album | null>(null);
+
+  // The top shelf shows a few records face-out — favour the most-played ones
+  // that actually have cover art, so the row reads as a wall of sleeves.
+  const featured = [...albums]
+    .sort((a, b) => {
+      const art = Number(Boolean(b.coverUrl)) - Number(Boolean(a.coverUrl));
+      if (art) return art;
+      return b.playCount - a.playCount;
+    })
+    .slice(0, 5);
   // local "spinning in silence" flag for when Spotify isn't connected
   const [localPlaying, setLocalPlaying] = useState(false);
   const playing = spotifyReady ? spotify.isPlaying : localPlaying;
@@ -95,54 +106,67 @@ export default function ShelfView({ albums }: { albums: Album[] }) {
           Pull a record from the shelf. Put it on. Let it play.
         </p>
 
-        <div className="relative">
-          {/* warm light pooled on the wall behind the records */}
+        {/* the bookcase — recessed wooden cabinetry the records live in */}
+        <div
+          className="wood-grain relative rounded-lg border border-wood-hi/30 px-5 pt-4 md:px-8 md:pt-6"
+          style={{
+            backgroundColor: "rgb(var(--color-wood))",
+            boxShadow:
+              "inset 0 2px 0 rgb(var(--color-wood-hi) / 0.4), inset 0 0 90px -20px rgba(0,0,0,0.9), 0 40px 80px -40px rgba(0,0,0,0.95)",
+          }}
+        >
+          {/* warm light pooled on the back wall of the case */}
           <div
             aria-hidden
-            className="pointer-events-none absolute -top-10 left-0 h-[460px] w-[640px] max-w-full"
+            className="pointer-events-none absolute inset-0 rounded-lg"
             style={{
               background:
-                "radial-gradient(ellipse 60% 70% at 22% 45%, rgba(200,131,42,0.1), transparent 70%)",
+                "radial-gradient(ellipse 55% 60% at 26% 32%, rgba(200,131,42,0.12), transparent 72%)",
             }}
           />
 
-          {/* the crate of spines, closed off with a wooden bookend */}
-          <div className="relative flex items-end gap-[3px] overflow-x-auto pb-5 pt-3">
-            {albums.map((album) => (
-              <VinylSpine key={album.id} album={album} onSelect={open} />
-            ))}
+          {/* TOP SHELF — featured records, face-out */}
+          <FeaturedShelf albums={featured} onSelect={open} />
 
-            {/* a leaning wooden bookend — the crate has room for more */}
+          {/* BOTTOM SHELF — the full crate of spines */}
+          <div className="relative mt-6">
+            <div className="relative flex items-end gap-[3px] overflow-x-auto pb-5 pt-3">
+              {albums.map((album) => (
+                <VinylSpine key={album.id} album={album} onSelect={open} />
+              ))}
+
+              {/* a leaning wooden bookend — the crate has room for more */}
+              <div
+                aria-hidden
+                className="wood-grain ml-1 h-[150px] w-3 shrink-0 origin-bottom -rotate-[6deg] self-end rounded-sm"
+                style={{
+                  backgroundColor: "rgb(var(--color-wood))",
+                  boxShadow:
+                    "inset 1px 0 0 rgb(var(--color-wood-hi) / 0.35), 0 8px 16px -10px rgba(0,0,0,0.9)",
+                }}
+              />
+            </div>
+
+            {/* the wooden ledge the records stand on */}
+            <div
+              className="wood-grain-h h-3 w-full rounded-sm"
+              style={{
+                backgroundColor: "rgb(var(--color-wood))",
+                boxShadow:
+                  "inset 0 1px 0 rgb(var(--color-wood-hi) / 0.5), 0 14px 30px -16px rgba(0,0,0,0.9)",
+              }}
+            />
+
+            {/* faint reflection of the spines on the polished ledge, then shadow */}
             <div
               aria-hidden
-              className="ml-1 h-[150px] w-3 shrink-0 origin-bottom -rotate-[6deg] self-end rounded-sm"
+              className="pointer-events-none -mt-px h-10 w-full"
               style={{
-                background: "linear-gradient(90deg, #3a2c1d, #1c1712)",
-                boxShadow:
-                  "inset 1px 0 0 rgba(200,131,42,0.12), 0 8px 16px -10px rgba(0,0,0,0.9)",
+                background:
+                  "linear-gradient(180deg, rgba(200,131,42,0.05), transparent 70%), linear-gradient(180deg, rgba(0,0,0,0.5), transparent 80%)",
               }}
             />
           </div>
-
-          {/* the wooden ledge the records stand on */}
-          <div
-            className="h-3 w-full rounded-sm"
-            style={{
-              background: "linear-gradient(180deg, #3a2c1d, #1c1712)",
-              boxShadow:
-                "inset 0 1px 0 rgba(200,131,42,0.18), 0 14px 30px -16px rgba(0,0,0,0.9)",
-            }}
-          />
-
-          {/* faint reflection of the spines on the polished ledge, then shadow */}
-          <div
-            aria-hidden
-            className="pointer-events-none -mt-px h-10 w-full"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(200,131,42,0.05), transparent 70%), linear-gradient(180deg, rgba(0,0,0,0.5), transparent 80%)",
-            }}
-          />
         </div>
       </section>
 
