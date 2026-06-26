@@ -3,7 +3,7 @@
  * tungsten light down over the shelf — the room's actual light source.
  * Purely atmospheric: it sits behind everything and ignores the pointer.
  */
-export default function RoomLamp() {
+export default function RoomLamp({ on = true }: { on?: boolean }) {
   return (
     <div
       aria-hidden
@@ -12,8 +12,9 @@ export default function RoomLamp() {
     >
       {/* the broad pool of light the lamp throws across the room */}
       <div
-        className="absolute -left-24 -top-24 h-[640px] w-[680px]"
+        className="absolute -left-24 -top-24 h-[640px] w-[680px] transition-opacity duration-700"
         style={{
+          opacity: on ? 1 : 0,
           background:
             "radial-gradient(ellipse 45% 42% at 32% 30%, rgba(220,150,60,0.22), rgba(200,131,42,0.08) 45%, transparent 70%)",
         }}
@@ -53,10 +54,14 @@ export default function RoomLamp() {
 
       {/* the pleated shade */}
       <div className="absolute left-[96px] top-[96px]">
-        {/* bulb glow spilling from under the rim */}
+        {/* bulb glow spilling from under the rim — cools to a dim filament
+            when the light is switched off */}
         <span
-          className="absolute left-1/2 top-[46px] h-24 w-24 -translate-x-1/2 rounded-full animate-glow"
+          className={`absolute left-1/2 top-[46px] h-24 w-24 -translate-x-1/2 rounded-full transition-opacity duration-700 ${
+            on ? "animate-glow" : ""
+          }`}
           style={{
+            opacity: on ? 1 : 0.06,
             background:
               "radial-gradient(circle, rgba(255,214,140,0.9), rgba(220,150,60,0.35) 45%, transparent 70%)",
             filter: "blur(2px)",

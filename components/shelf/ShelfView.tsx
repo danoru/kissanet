@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { Album } from "@/lib/types";
-import VinylSpine from "./VinylSpine";
-import FaceOutRecord from "./FaceOutRecord";
+import Shelf from "./Shelf";
 import AlbumCover from "@/components/album/AlbumCover";
 import AlbumDetails from "@/components/album/AlbumDetails";
 import RecordPlayer from "@/components/player/RecordPlayer";
@@ -15,6 +14,41 @@ import { useSpotify } from "@/components/player/SpotifyPlayerContext";
 type View = "shelf" | "pulled" | "playing";
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
+
+// physical record widths (px) used to pack records onto shelves
+const SPINE_W = 44;
+const FACE_W = 440;
+const GAP = 3;
+// a full shelf, ledge + reflection included, is ~492px tall
+const FULL_TIER = 492;
+const TIER_GAP = 18;
+
+/**
+ * Greedily lay records left-to-right, starting a new shelf whenever the next
+ * record would run off the end of the available width. Featured records are
+ * wide (face-out), so a few of them naturally spill onto fresh shelves
+ * instead of pushing the first record off the ledge.
+ */
+function packShelves(items: Album[], width: number): Album[][] {
+  if (items.length === 0) return [];
+  if (width <= 0) return [items]; // before we've measured, keep it one shelf
+  const shelves: Album[][] = [];
+  let cur: Album[] = [];
+  let used = 0;
+  for (const a of items) {
+    const w = a.featured ? FACE_W : SPINE_W;
+    if (cur.length > 0 && used + GAP + w > width) {
+      shelves.push(cur);
+      cur = [a];
+      used = w;
+    } else {
+      used += (cur.length > 0 ? GAP : 0) + w;
+      cur.push(a);
+    }
+  }
+  if (cur.length) shelves.push(cur);
+  return shelves;
+}
 
 export default function ShelfView({ albums }: { albums: Album[] }) {
   const reduce = useReducedMotion();
@@ -32,6 +66,55 @@ export default function ShelfView({ albums }: { albums: Album[] }) {
   // re-sync if the server data changes underneath us (e.g. after a refresh).
   const [items, setItems] = useState<Album[]>(albums);
   useEffect(() => setItems(albums), [albums]);
+
+  // Records are packed onto as many shelves as they need. When there's more
+  // than one, the whole bookcase shrinks to an overview; click a shelf to
+  // step closer (zoom it back to full size) and pull a record.
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [shelfWidth, setShelfWidth] = useState(0);
+  const [vh, setVh] = useState(900);
+  const [zoomed, setZoomed] = useState<number | null>(null);
+
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    const measure = () => setShelfWidth(el.clientWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const onResize = () => setVh(window.innerHeight);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const shelves = useMemo(
+    () => packShelves(items, shelfWidth),
+    [items, shelfWidth],
+  );
+
+  // if a repack drops the shelf we were zoomed into, fall back to the overview
+  useEffect(() => {
+    if (zoomed !== null && zoomed >= shelves.length) setZoomed(null);
+  }, [zoomed, shelves.length]);
+
+  const multi = shelves.length > 1;
+  const overview = multi && zoomed === null;
+  // shrink the stack so every shelf fits the height we have to work with
+  const avail = Math.max(360, vh - 300);
+  const overviewScale = overview
+    ? Math.min(
+        0.6,
+        Math.max(
+          0.2,
+          avail / (shelves.length * FULL_TIER + (shelves.length - 1) * TIER_GAP),
+        ),
+      )
+    : 1;
 
   const toggleFeatured = useCallback((album: Album) => {
     const next = !album.featured;
@@ -134,49 +217,91 @@ export default function ShelfView({ albums }: { albums: Album[] }) {
             }}
           />
 
-          {/* the records — spine-on, with featured ones turned face-out in
-              place. They stand directly on the ledge below, no scroll. */}
-          <div className="relative">
-            <div className="relative flex items-end gap-[3px]">
-              {items.map((album) =>
-                album.featured ? (
-                  <FaceOutRecord key={album.id} album={album} onSelect={open} />
-                ) : (
-                  <VinylSpine key={album.id} album={album} onSelect={open} />
-                ),
-              )}
+          {/* the records, packed across as many shelves as they need. With
+              one shelf they stand full-size; with several, the stack shrinks
+              to an overview you can step into shelf by shelf. */}
+          <div className="relative" ref={contentRef}>
+            {multi && zoomed !== null && (
+              <div className="mb-5 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setZoomed(null)}
+                  className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted transition-colors hover:text-cream"
+                >
+                  ← all shelves
+                </button>
+                <div className="flex items-center gap-2">
+                  {shelves.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setZoomed(i)}
+                      aria-label={`Shelf ${i + 1}`}
+                      aria-current={i === zoomed}
+                      className={`h-7 w-7 rounded-full border font-mono text-[10px] transition-colors ${
+                        i === zoomed
+                          ? "border-amber text-amber"
+                          : "border-wood-hi/40 text-muted hover:text-cream"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
-              {/* a leaning wooden bookend — the crate has room for more */}
-              <div
-                aria-hidden
-                className="wood-grain ml-1 h-[150px] w-3 shrink-0 origin-bottom -rotate-[6deg] self-end rounded-sm"
-                style={{
-                  backgroundColor: "rgb(var(--color-wood))",
-                  boxShadow:
-                    "inset 1px 0 0 rgb(var(--color-wood-hi) / 0.35), 0 8px 16px -10px rgba(0,0,0,0.9)",
-                }}
-              />
+            <div className={overview ? "space-y-[18px]" : ""}>
+              {shelves.map((shelf, i) => {
+                if (zoomed !== null && zoomed !== i) return null;
+                const last = i === shelves.length - 1;
+
+                if (overview) {
+                  return (
+                    <div
+                      key={i}
+                      className="relative"
+                      style={{ height: FULL_TIER * overviewScale }}
+                    >
+                      <div
+                        style={{
+                          transform: `scale(${overviewScale})`,
+                          transformOrigin: "top center",
+                        }}
+                      >
+                        <Shelf
+                          albums={shelf}
+                          onSelect={open}
+                          showBookend={last}
+                          interactive={false}
+                        />
+                      </div>
+                      {/* the whole shelf is the click target in overview */}
+                      <button
+                        type="button"
+                        onClick={() => setZoomed(i)}
+                        aria-label={`Step closer to shelf ${i + 1} of ${shelves.length}`}
+                        className="group absolute inset-0 z-10 flex items-end justify-center rounded-lg ring-1 ring-transparent transition-all hover:bg-amber/[0.04] hover:ring-amber/30"
+                      >
+                        <span className="mb-6 rounded-full bg-room/70 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.22em] text-muted opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
+                          shelf {i + 1} · step closer
+                        </span>
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <Shelf
+                    key={i}
+                    albums={shelf}
+                    onSelect={open}
+                    showBookend={last}
+                    interactive
+                  />
+                );
+              })}
             </div>
-
-            {/* the wooden ledge the records stand on */}
-            <div
-              className="wood-grain-h h-3 w-full rounded-sm"
-              style={{
-                backgroundColor: "rgb(var(--color-wood))",
-                boxShadow:
-                  "inset 0 1px 0 rgb(var(--color-wood-hi) / 0.5), 0 14px 30px -16px rgba(0,0,0,0.9)",
-              }}
-            />
-
-            {/* faint reflection of the spines on the polished ledge, then shadow */}
-            <div
-              aria-hidden
-              className="pointer-events-none -mt-px h-10 w-full"
-              style={{
-                background:
-                  "linear-gradient(180deg, rgba(200,131,42,0.05), transparent 70%), linear-gradient(180deg, rgba(0,0,0,0.5), transparent 80%)",
-              }}
-            />
           </div>
         </div>
       </section>
