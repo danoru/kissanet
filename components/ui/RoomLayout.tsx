@@ -1,6 +1,9 @@
 import Link from "next/link";
 import GrainOverlay from "./GrainOverlay";
 import RoomLight from "./RoomLight";
+import RoomShell from "../ambient/RoomShell";
+import Booth from "../ambient/Booth";
+import AmbientControls from "../ambient/AmbientControls";
 
 /**
  * The shared chrome for every screen: a dim room with a deep vignette,
@@ -16,8 +19,26 @@ export default function RoomLayout({
 }) {
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-room text-cream">
+      {/* the room given depth — angled side walls + floor + city windows,
+          sitting behind the shelf */}
+      <RoomShell />
+
+      {/* a soft warm grade + a bloom of light around the sconce, to lift the
+          coziness a touch without stealing the shelf's thunder */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-[15] mix-blend-soft-light"
+        style={{
+          background:
+            "radial-gradient(ellipse 50% 45% at 20% 22%, rgba(255,196,120,0.28), transparent 60%), linear-gradient(180deg, rgba(255,180,110,0.06), rgba(120,70,30,0.05))",
+        }}
+      />
+
       {/* the wall sconce that lights the room — and its switch */}
       <RoomLight />
+
+      {/* the booth we're sitting in — table edge + leather backs, foreground */}
+      <Booth />
 
       {/* edge vignette — the dark falls off toward the corners of the room */}
       <div
@@ -30,6 +51,9 @@ export default function RoomLayout({
       />
 
       <GrainOverlay />
+
+      {/* sound + weather controls, grouped with the light switch in the corner */}
+      <AmbientControls />
 
       <header className="relative z-30 flex items-baseline justify-between px-8 py-6 md:px-14">
         <Link href="/" className="group flex items-baseline gap-3">
@@ -65,7 +89,7 @@ export default function RoomLayout({
         </nav>
       </header>
 
-      <main className="relative">{children}</main>
+      <main className="relative z-10">{children}</main>
     </div>
   );
 }

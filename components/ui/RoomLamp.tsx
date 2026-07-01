@@ -7,16 +7,24 @@ export default function RoomLamp({ on = true }: { on?: boolean }) {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed left-0 top-[120px] z-20 hidden select-none lg:block"
-      style={{ width: 360, height: 520 }}
+      className="pointer-events-none fixed left-0 top-[120px] z-[27] hidden select-none lg:block"
+      style={{
+        width: 360,
+        height: 520,
+        // the brass and shade fall dark with the room when switched off
+        filter: on ? "none" : "brightness(0.3) saturate(0.65)",
+        transition: "filter 700ms ease-out",
+      }}
     >
-      {/* the broad pool of light the lamp throws across the room */}
+      {/* the broad pool of light the lamp throws across the room — breathing
+          with a gentle, slightly irregular candle flicker while it's lit */}
       <div
         className="absolute -left-24 -top-24 h-[640px] w-[680px] transition-opacity duration-700"
         style={{
           opacity: on ? 1 : 0,
           background:
             "radial-gradient(ellipse 45% 42% at 32% 30%, rgba(220,150,60,0.22), rgba(200,131,42,0.08) 45%, transparent 70%)",
+          animation: on ? "flicker 6s ease-in-out infinite" : undefined,
         }}
       />
 

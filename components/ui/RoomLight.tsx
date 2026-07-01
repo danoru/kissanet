@@ -1,34 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import RoomLamp from "./RoomLamp";
-
-const STORAGE_KEY = "kissa-light";
+import DustMotes from "../ambient/DustMotes";
+import { useRoomLight } from "../ambient/RoomLightProvider";
 
 /**
- * Owns whether the room's light is on. Drives the wall sconce, drops a warm
- * darkness over everything when it's off (records fade to dim silhouettes),
- * and offers two ways to switch it: a pull-chain hanging from the lamp on
- * wide screens, and a small always-present toggle in the corner.
+ * Drives the wall sconce and drops a warm darkness over the interior when the
+ * light's off (records fade to dim silhouettes; the city windows glow through,
+ * handled in RoomShell). Two switches: a pull-chain hanging from the lamp on
+ * wide screens, and a small always-present toggle in the corner. The on/off
+ * state itself lives in RoomLightProvider so the windows can read it too.
  */
 export default function RoomLight() {
-  const [on, setOn] = useState(true);
-
-  // remember the choice across visits
-  useEffect(() => {
-    if (localStorage.getItem(STORAGE_KEY) === "off") setOn(false);
-  }, []);
-
-  const toggle = () =>
-    setOn((v) => {
-      const next = !v;
-      localStorage.setItem(STORAGE_KEY, next ? "on" : "off");
-      return next;
-    });
+  const { on, toggle } = useRoomLight();
 
   return (
     <>
       <RoomLamp on={on} />
+      <DustMotes on={on} />
 
       {/* the dark that settles in when the light's off — records stay just
           visible as silhouettes underneath it */}

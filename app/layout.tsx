@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter, JetBrains_Mono } from "next/font/google";
 import Providers from "@/components/Providers";
+import { roomCssVars } from "@/lib/room";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -38,6 +39,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${cormorant.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased`}
+        style={roomCssVars()}
       >
         <Providers>{children}</Providers>
       </body>
