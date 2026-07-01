@@ -23,11 +23,14 @@ export default function Shelf({
 }) {
   return (
     <div className="relative">
-      {/* the records — spine-on, with featured ones turned face-out in place */}
+      {/* the records — spine-on, with featured ones turned face-out in place.
+          The row carries the perspective so each spine can turn to show a
+          slice of its cover; origin sits left-of-centre to match the lamp. */}
       <div
         className={`relative flex items-end gap-[3px] ${
           interactive ? "" : "pointer-events-none"
         }`}
+        style={{ perspective: "1600px", perspectiveOrigin: "35% 45%" }}
       >
         {albums.map((album) =>
           album.featured ? (

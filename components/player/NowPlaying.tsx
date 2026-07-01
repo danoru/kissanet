@@ -14,7 +14,7 @@ function VuMeter({ playing }: { playing: boolean }) {
   // staggered delays/durations so the bars don't bounce in lockstep
   const bars = [0, 0.18, 0.36, 0.1, 0.28, 0.42];
   return (
-    <div className="flex h-12 items-end gap-[3px] rounded-sm bg-black/55 px-2 py-1.5 ring-1 ring-black/60">
+    <div className="flex h-10 items-end gap-[3px] rounded-sm bg-black/55 px-1.5 py-1 ring-1 ring-black/60">
       {bars.map((delay, i) => (
         <span
           key={i}
@@ -69,7 +69,7 @@ export default function NowPlaying({
 
   return (
     <div
-      className="brushed-metal relative w-full max-w-[420px] rounded-md p-4 ring-1 ring-black/60"
+      className="brushed-metal relative w-full max-w-[320px] rounded-md p-3 ring-1 ring-black/60"
       style={{
         boxShadow:
           "inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 6px rgba(0,0,0,0.5), 0 20px 40px -20px rgba(0,0,0,0.9)",
@@ -106,18 +106,18 @@ export default function NowPlaying({
         >
           {/* tuning ticks across the top */}
           <div className="mb-1 flex items-end justify-between">
-            {Array.from({ length: 21 }).map((_, i) => (
+            {Array.from({ length: 17 }).map((_, i) => (
               <span
                 key={i}
                 aria-hidden
                 className="w-px bg-amber/40"
-                style={{ height: i % 5 === 0 ? 7 : 4 }}
+                style={{ height: i % 4 === 0 ? 6 : 3 }}
               />
             ))}
           </div>
 
           <p
-            className="truncate font-display text-lg leading-tight text-amber"
+            className="truncate font-display text-base leading-tight text-amber"
             style={{ textShadow: "0 0 10px rgba(220,150,60,0.55)" }}
           >
             {track ?? album.title}
@@ -152,8 +152,8 @@ export default function NowPlaying({
       </div>
 
       {/* lower deck: brand plate + power knob */}
-      <div className="mt-3 flex items-center justify-between">
-        <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-cream/45">
+      <div className="mt-2.5 flex items-center justify-between">
+        <span className="font-mono text-[8px] uppercase tracking-[0.3em] text-cream/45">
           喫茶 · stereo receiver
         </span>
 
@@ -162,7 +162,7 @@ export default function NowPlaying({
             type="button"
             onClick={onToggle}
             aria-label={playing ? "Pause" : "Play"}
-            className="group flex h-12 w-12 items-center justify-center rounded-full text-amber transition-transform active:scale-95"
+            className="group flex h-9 w-9 items-center justify-center rounded-full text-amber transition-transform active:scale-95"
             style={{
               background:
                 "radial-gradient(circle at 35% 30%, #5a534a, #221f1b 75%)",
@@ -171,7 +171,7 @@ export default function NowPlaying({
             }}
           >
             <span
-              className="text-sm transition-colors group-hover:text-cream"
+              className="text-xs transition-colors group-hover:text-cream"
               style={{ textShadow: "0 0 8px rgba(220,150,60,0.6)" }}
             >
               {playing ? "❚❚" : "▶"}
@@ -182,7 +182,7 @@ export default function NowPlaying({
 
       {/* connection note */}
       {!spotifyConnected && (
-        <div className="mt-3 border-t border-black/40 pt-2">
+        <div className="mt-2.5 border-t border-black/40 pt-2">
           {spotifyStatus === "disconnected" && onConnect ? (
             <button
               type="button"
